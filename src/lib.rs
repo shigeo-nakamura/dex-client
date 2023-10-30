@@ -2,13 +2,13 @@ use reqwest;
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct TickerResponse {
     pub symbol: String,
     pub price: f64,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PnlResponse {
     pub data: f64,
 }
@@ -20,7 +20,7 @@ struct CreateOrderPayload {
     side: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
     pub result: String,
     #[serde(default)]
