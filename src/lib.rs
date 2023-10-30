@@ -5,18 +5,18 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug)]
 pub struct TickerResponse {
     pub symbol: String,
-    pub price: f64,
+    pub price: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct PnlResponse {
-    pub data: f64,
+    pub data: String,
 }
 
 #[derive(Serialize)]
 struct CreateOrderPayload {
     symbol: String,
-    size: f64,
+    size: String,
     side: String,
 }
 
@@ -65,7 +65,7 @@ impl DexClient {
     pub fn create_order(
         &self,
         symbol: &str,
-        size: f64,
+        size: &str,
         side: &str,
     ) -> Result<CreateOrderResponse, reqwest::Error> {
         let url = format!("{}/create-order?dex=apex", self.base_url);
@@ -73,7 +73,7 @@ impl DexClient {
 
         let payload = CreateOrderPayload {
             symbol: symbol.to_string(),
-            size,
+            size: size.to_string(),
             side: side.to_string(),
         };
 
