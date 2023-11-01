@@ -1,5 +1,5 @@
-use reqwest;
 use reqwest::header::HeaderMap;
+use reqwest::{self, Client};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
@@ -31,18 +31,17 @@ pub struct CreateOrderResponse {
 
 #[derive(Clone, Debug)]
 pub struct DexClient {
-    client: reqwest::blocking::Client,
+    client: Client,
     base_url: String,
 }
 
 impl DexClient {
-    pub fn new(api_key: String, base_url: String) -> Self {
-        let client = reqwest::blocking::Client::builder()
+    pub async fn new(api_key: String, base_url: String) -> Result<Self, reqwest::Error> {
+        let client = Client::builder()
             .default_headers(Self::headers_with_api_key(api_key))
-            .build()
-            .unwrap();
+            .build()?;
 
-        DexClient { client, base_url }
+        Ok(DexClient { client, base_url })
     }
 
     fn headers_with_api_key(api_key: String) -> HeaderMap {
@@ -51,43 +50,34 @@ impl DexClient {
         headers
     }
 
-    fn handle_request<T: serde::de::DeserializeOwned>(
+    async fn handle_request<T: serde::de::DeserializeOwned>(
         &self,
-        result: Result<reqwest::blocking::Response, reqwest::Error>,
-    ) -> Result<T, ()> {
-        match result {
-            Ok(response) => match response.json() {
-                Ok(data) => Ok(data),
-                Err(e) => {
-                    log::error!("Failed to parse JSON response: {:?}", e);
-                    Err(())
-                }
-            },
-            Err(e) => {
-                log::error!("Request error: {:?}", e);
-                Err(())
-            }
-        }
+        result: Result<reqwest::Response, reqwest::Error>,
+    ) -> Result<T, reqwest::Error> {
+        let response = result?;
+        response.json().await
     }
 
-    pub fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, ()> {
+    pub async fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, reqwest::Error> {
         let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
         log::info!("{:?}", url);
-        self.handle_request(self.client.get(&url).send())
+        self.handle_request(self.client.get(&url).send().await)
+            .await
     }
 
-    pub fn get_yesterday_pnl(&self) -> Result<PnlResponse, ()> {
+    pub async fn get_yesterday_pnl(&self) -> Result<PnlResponse, reqwest::Error> {
         let url = format!("{}/yesterday-pnl?dex=apex", self.base_url);
         log::info!("{:?}", url);
-        self.handle_request(self.client.get(&url).send())
+        self.handle_request(self.client.get(&url).send().await)
+            .await
     }
 
-    pub fn create_order(
+    pub async fn create_order(
         &self,
         symbol: &str,
         size: &str,
         side: &str,
-    ) -> Result<CreateOrderResponse, ()> {
+    ) -> Result<CreateOrderResponse, reqwest::Error> {
         let url = format!("{}/create-order?dex=apex", self.base_url);
         log::info!("{:?}", url);
         let payload = CreateOrderPayload {
@@ -95,6 +85,7 @@ impl DexClient {
             size: size.to_string(),
             side: side.to_string(),
         };
-        self.handle_request(self.client.post(&url).json(&payload).send())
+        self.handle_request(self.client.post(&url).json(&payload).send().await)
+            .await
     }
 }
