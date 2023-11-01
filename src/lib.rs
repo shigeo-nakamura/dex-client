@@ -29,6 +29,7 @@ pub struct CreateOrderResponse {
     pub message: Option<String>,
 }
 
+#[derive(Clone, Debug)]
 pub struct DexClient {
     client: reqwest::blocking::Client,
     base_url: String,
