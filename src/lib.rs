@@ -60,14 +60,14 @@ impl DexClient {
 
     pub async fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, reqwest::Error> {
         let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
-        log::info!("{:?}", url);
+        log::debug!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await)
             .await
     }
 
     pub async fn get_yesterday_pnl(&self) -> Result<PnlResponse, reqwest::Error> {
         let url = format!("{}/yesterday-pnl?dex=apex", self.base_url);
-        log::info!("{:?}", url);
+        log::debug!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await)
             .await
     }
@@ -79,7 +79,7 @@ impl DexClient {
         side: &str,
     ) -> Result<CreateOrderResponse, reqwest::Error> {
         let url = format!("{}/create-order?dex=apex", self.base_url);
-        log::info!("{:?}", url);
+        log::debug!("{:?}", url);
         let payload = CreateOrderPayload {
             symbol: symbol.to_string(),
             size: size.to_string(),
