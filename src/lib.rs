@@ -51,16 +51,35 @@ impl DexClient {
         headers
     }
 
-    pub fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, reqwest::Error> {
-        let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
-        log::info!("{:?}", url);
-        self.client.get(&url).send()?.json()
+    fn handle_request<T: serde::de::DeserializeOwned>(
+        &self,
+        result: Result<reqwest::blocking::Response, reqwest::Error>,
+    ) -> Result<T, ()> {
+        match result {
+            Ok(response) => match response.json() {
+                Ok(data) => Ok(data),
+                Err(e) => {
+                    log::error!("Failed to parse JSON response: {:?}", e);
+                    Err(())
+                }
+            },
+            Err(e) => {
+                log::error!("Request error: {:?}", e);
+                Err(())
+            }
+        }
     }
 
-    pub fn get_yesterday_pnl(&self) -> Result<PnlResponse, reqwest::Error> {
+    pub fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, ()> {
+        let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
+        log::info!("{:?}", url);
+        self.handle_request(self.client.get(&url).send())
+    }
+
+    pub fn get_yesterday_pnl(&self) -> Result<PnlResponse, ()> {
         let url = format!("{}/yesterday-pnl?dex=apex", self.base_url);
         log::info!("{:?}", url);
-        self.client.get(&url).send()?.json()
+        self.handle_request(self.client.get(&url).send())
     }
 
     pub fn create_order(
@@ -68,16 +87,14 @@ impl DexClient {
         symbol: &str,
         size: &str,
         side: &str,
-    ) -> Result<CreateOrderResponse, reqwest::Error> {
+    ) -> Result<CreateOrderResponse, ()> {
         let url = format!("{}/create-order?dex=apex", self.base_url);
         log::info!("{:?}", url);
-
         let payload = CreateOrderPayload {
             symbol: symbol.to_string(),
             size: size.to_string(),
             side: side.to_string(),
         };
-
-        self.client.post(&url).json(&payload).send()?.json()
+        self.handle_request(self.client.post(&url).json(&payload).send())
     }
 }
