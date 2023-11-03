@@ -26,6 +26,8 @@ pub struct CreateOrderResponse {
     #[serde(default)]
     pub price: Option<String>,
     #[serde(default)]
+    pub size: Option<String>,
+    #[serde(default)]
     pub message: Option<String>,
 }
 
