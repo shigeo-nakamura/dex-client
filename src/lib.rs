@@ -23,7 +23,8 @@ struct CreateOrderPayload {
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
     pub result: String,
-    pub price: String,
+    #[serde(default)]
+    pub price: Option<String>,
     #[serde(default)]
     pub message: Option<String>,
 }
