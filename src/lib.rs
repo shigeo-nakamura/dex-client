@@ -4,12 +4,15 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 pub struct TickerResponse {
+    pub result: String,
     pub symbol: String,
-    pub price: String,
+    #[serde(default)]
+    pub price: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct PnlResponse {
+    pub result: String,
     pub data: String,
 }
 
@@ -23,10 +26,8 @@ struct CreateOrderPayload {
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
     pub result: String,
-    #[serde(default)]
-    pub price: Option<String>,
-    #[serde(default)]
-    pub size: Option<String>,
+    pub price: String,
+    pub size: String,
     #[serde(default)]
     pub message: Option<String>,
 }
