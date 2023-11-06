@@ -6,8 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct TickerResponse {
     pub result: String,
     pub symbol: String,
-    #[serde(default)]
-    pub price: Option<String>,
+    pub price: String,
 }
 
 #[derive(Deserialize, Debug)]
