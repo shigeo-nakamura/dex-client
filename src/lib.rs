@@ -1,6 +1,8 @@
 use reqwest::header::HeaderMap;
 use reqwest::{self, Client};
 use serde::{Deserialize, Serialize};
+use std::error::Error as StdError;
+use std::fmt::{self, Display};
 
 #[derive(Deserialize, Debug)]
 pub struct TickerResponse {
@@ -37,6 +39,42 @@ pub struct DexClient {
     base_url: String,
 }
 
+#[derive(Debug)]
+pub enum DexError {
+    Serde(serde_json::Error),
+    Reqwest(reqwest::Error),
+}
+
+impl Display for DexError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DexError::Serde(ref e) => write!(f, "Serde JSON error: {}", e),
+            DexError::Reqwest(ref e) => write!(f, "Reqwest error: {}", e),
+        }
+    }
+}
+
+impl StdError for DexError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        match *self {
+            DexError::Serde(ref e) => Some(e),
+            DexError::Reqwest(ref e) => Some(e),
+        }
+    }
+}
+
+impl From<serde_json::Error> for DexError {
+    fn from(err: serde_json::Error) -> DexError {
+        DexError::Serde(err)
+    }
+}
+
+impl From<reqwest::Error> for DexError {
+    fn from(err: reqwest::Error) -> DexError {
+        DexError::Reqwest(err)
+    }
+}
+
 impl DexClient {
     pub async fn new(api_key: String, base_url: String) -> Result<Self, reqwest::Error> {
         let client = Client::builder()
@@ -55,21 +93,33 @@ impl DexClient {
     async fn handle_request<T: serde::de::DeserializeOwned>(
         &self,
         result: Result<reqwest::Response, reqwest::Error>,
-    ) -> Result<T, reqwest::Error> {
-        let response = result?;
-        response.json().await
+    ) -> Result<T, DexError> {
+        let response = result.map_err(DexError::from)?;
+
+        let headers = response.headers().clone();
+        let body = response.text().await.map_err(DexError::from)?;
+        log::debug!("Response body: {}", body);
+
+        match serde_json::from_str(&body) {
+            Ok(data) => Ok(data),
+            Err(e) => {
+                log::warn!("Respons header: {:?}", headers);
+                log::error!("Failed to deserialize response: {}", e);
+                Err(DexError::from(e))
+            }
+        }
     }
 
-    pub async fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, reqwest::Error> {
+    pub async fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, DexError> {
         let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
-        log::debug!("{:?}", url);
+        log::trace!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await)
             .await
     }
 
-    pub async fn get_yesterday_pnl(&self) -> Result<PnlResponse, reqwest::Error> {
+    pub async fn get_yesterday_pnl(&self) -> Result<PnlResponse, DexError> {
         let url = format!("{}/yesterday-pnl?dex=apex", self.base_url);
-        log::debug!("{:?}", url);
+        log::trace!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await)
             .await
     }
@@ -79,9 +129,9 @@ impl DexClient {
         symbol: &str,
         size: &str,
         side: &str,
-    ) -> Result<CreateOrderResponse, reqwest::Error> {
+    ) -> Result<CreateOrderResponse, DexError> {
         let url = format!("{}/create-order?dex=apex", self.base_url);
-        log::debug!("{:?}", url);
+        log::trace!("{:?}", url);
         let payload = CreateOrderPayload {
             symbol: symbol.to_string(),
             size: size.to_string(),
