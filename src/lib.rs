@@ -43,6 +43,7 @@ pub struct DexClient {
 pub enum DexError {
     Serde(serde_json::Error),
     Reqwest(reqwest::Error),
+    ServerResponse(String),
 }
 
 impl Display for DexError {
@@ -50,6 +51,7 @@ impl Display for DexError {
         match *self {
             DexError::Serde(ref e) => write!(f, "Serde JSON error: {}", e),
             DexError::Reqwest(ref e) => write!(f, "Reqwest error: {}", e),
+            DexError::ServerResponse(ref e) => write!(f, "Server response error: {}", e),
         }
     }
 }
@@ -59,6 +61,7 @@ impl StdError for DexError {
         match *self {
             DexError::Serde(ref e) => Some(e),
             DexError::Reqwest(ref e) => Some(e),
+            DexError::ServerResponse(_) => None,
         }
     }
 }
@@ -96,17 +99,20 @@ impl DexClient {
     ) -> Result<T, DexError> {
         let response = result.map_err(DexError::from)?;
 
-        let headers = response.headers().clone();
-        let body = response.text().await.map_err(DexError::from)?;
-        log::debug!("Response body: {}", body);
+        if response.status().is_success() {
+            let headers = response.headers().clone();
+            let body = response.text().await.map_err(DexError::from)?;
+            log::info!("Response body: {}", body);
 
-        match serde_json::from_str(&body) {
-            Ok(data) => Ok(data),
-            Err(e) => {
-                log::warn!("Respons header: {:?}", headers);
+            serde_json::from_str(&body).map_err(|e| {
+                log::warn!("Response header: {:?}", headers);
                 log::error!("Failed to deserialize response: {}", e);
-                Err(DexError::from(e))
-            }
+                DexError::Serde(e)
+            })
+        } else {
+            let error_message = format!("Server returned error: {}", response.status());
+            log::error!("{}", &error_message);
+            Err(DexError::ServerResponse(error_message))
         }
     }
 
