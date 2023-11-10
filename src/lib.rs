@@ -24,6 +24,11 @@ struct CreateOrderPayload {
     side: String,
 }
 
+#[derive(Serialize)]
+struct CloseAllPositionsPayload {
+    symbol: String,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
     pub result: String,
@@ -31,6 +36,11 @@ pub struct CreateOrderResponse {
     pub size: String,
     #[serde(default)]
     pub message: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CloseAllPositionsResponse {
+    pub result: String,
 }
 
 #[derive(Clone, Debug)]
@@ -96,6 +106,7 @@ impl DexClient {
     async fn handle_request<T: serde::de::DeserializeOwned>(
         &self,
         result: Result<reqwest::Response, reqwest::Error>,
+        url: &str,
     ) -> Result<T, DexError> {
         let response = result.map_err(DexError::from)?;
 
@@ -110,7 +121,11 @@ impl DexClient {
                 DexError::Serde(e)
             })
         } else {
-            let error_message = format!("Server returned error: {}", response.status());
+            let error_message = format!(
+                "Server returned error: {}. Requested url: {}",
+                response.status(),
+                url
+            );
             log::error!("{}", &error_message);
             Err(DexError::ServerResponse(error_message))
         }
@@ -119,14 +134,14 @@ impl DexClient {
     pub async fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, DexError> {
         let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
         log::trace!("{:?}", url);
-        self.handle_request(self.client.get(&url).send().await)
+        self.handle_request(self.client.get(&url).send().await, &url)
             .await
     }
 
     pub async fn get_yesterday_pnl(&self) -> Result<PnlResponse, DexError> {
         let url = format!("{}/yesterday-pnl?dex=apex", self.base_url);
         log::trace!("{:?}", url);
-        self.handle_request(self.client.get(&url).send().await)
+        self.handle_request(self.client.get(&url).send().await, &url)
             .await
     }
 
@@ -143,7 +158,23 @@ impl DexClient {
             size: size.to_string(),
             side: side.to_string(),
         };
-        self.handle_request(self.client.post(&url).json(&payload).send().await)
+        self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
+            .await
+    }
+
+    pub async fn close_all_positions(
+        &self,
+        symbol: Option<String>,
+    ) -> Result<CloseAllPositionsResponse, DexError> {
+        let url = format!("{}/close_all_positions?dex=apex", self.base_url);
+        log::trace!("{:?}", url);
+        let payload = match symbol {
+            Some(symbol) => CloseAllPositionsPayload { symbol },
+            None => CloseAllPositionsPayload {
+                symbol: String::new(),
+            },
+        };
+        self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
             .await
     }
 }
