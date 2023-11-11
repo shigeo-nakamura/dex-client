@@ -6,14 +6,12 @@ use std::fmt::{self, Display};
 
 #[derive(Deserialize, Debug)]
 pub struct TickerResponse {
-    pub result: String,
     pub symbol: String,
     pub price: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct PnlResponse {
-    pub result: String,
     pub data: String,
 }
 
@@ -24,24 +22,21 @@ struct CreateOrderPayload {
     side: String,
 }
 
-#[derive(Serialize)]
-struct CloseAllPositionsPayload {
-    symbol: String,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
-    pub result: String,
     pub price: String,
     pub size: String,
     #[serde(default)]
     pub message: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct CloseAllPositionsResponse {
-    pub result: String,
+#[derive(Serialize)]
+struct CloseAllPositionsPayload {
+    symbol: String,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct CloseAllPositionsResponse {}
 
 #[derive(Clone, Debug)]
 pub struct DexClient {
