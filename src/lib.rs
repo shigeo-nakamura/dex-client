@@ -20,6 +20,8 @@ struct CreateOrderPayload {
     symbol: String,
     size: String,
     side: String,
+    #[serde(default)]
+    price: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -145,6 +147,7 @@ impl DexClient {
         symbol: &str,
         size: &str,
         side: &str,
+        price: Option<String>,
     ) -> Result<CreateOrderResponse, DexError> {
         let url = format!("{}/create-order?dex=apex", self.base_url);
         log::trace!("{:?}", url);
@@ -152,6 +155,7 @@ impl DexClient {
             symbol: symbol.to_string(),
             size: size.to_string(),
             side: side.to_string(),
+            price,
         };
         self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
             .await
