@@ -11,8 +11,9 @@ pub struct TickerResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct PnlResponse {
-    pub data: String,
+pub struct BalanceResponse {
+    pub equity: String,
+    pub balance: String,
 }
 
 #[derive(Serialize)]
@@ -135,8 +136,8 @@ impl DexClient {
             .await
     }
 
-    pub async fn get_yesterday_pnl(&self) -> Result<PnlResponse, DexError> {
-        let url = format!("{}/yesterday-pnl?dex=apex", self.base_url);
+    pub async fn get_balance(&self) -> Result<BalanceResponse, DexError> {
+        let url = format!("{}/get-balance?dex=apex", self.base_url);
         log::trace!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await, &url)
             .await
