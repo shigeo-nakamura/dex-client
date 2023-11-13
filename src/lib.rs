@@ -129,15 +129,15 @@ impl DexClient {
         }
     }
 
-    pub async fn get_ticker(&self, symbol: &str) -> Result<TickerResponse, DexError> {
-        let url = format!("{}/ticker?dex=apex&symbol={}", self.base_url, symbol);
+    pub async fn get_ticker(&self, dex: &str, symbol: &str) -> Result<TickerResponse, DexError> {
+        let url = format!("{}/ticker?dex={}&symbol={}", self.base_url, dex, symbol);
         log::trace!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await, &url)
             .await
     }
 
-    pub async fn get_balance(&self) -> Result<BalanceResponse, DexError> {
-        let url = format!("{}/get-balance?dex=apex", self.base_url);
+    pub async fn get_balance(&self, dex: &str) -> Result<BalanceResponse, DexError> {
+        let url = format!("{}/get-balance?dex={}", self.base_url, dex);
         log::trace!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await, &url)
             .await
@@ -145,12 +145,13 @@ impl DexClient {
 
     pub async fn create_order(
         &self,
+        dex: &str,
         symbol: &str,
         size: &str,
         side: &str,
         price: Option<String>,
     ) -> Result<CreateOrderResponse, DexError> {
-        let url = format!("{}/create-order?dex=apex", self.base_url);
+        let url = format!("{}/create-order?dex={}", self.base_url, dex);
         log::trace!("{:?}", url);
         let payload = CreateOrderPayload {
             symbol: symbol.to_string(),
@@ -164,9 +165,10 @@ impl DexClient {
 
     pub async fn close_all_positions(
         &self,
+        dex: &str,
         symbol: Option<String>,
     ) -> Result<CloseAllPositionsResponse, DexError> {
-        let url = format!("{}/close_all_positions?dex=apex", self.base_url);
+        let url = format!("{}/close_all_positions?dex={}", self.base_url, dex);
         log::trace!("{:?}", url);
         let payload = match symbol {
             Some(symbol) => CloseAllPositionsPayload { symbol },
