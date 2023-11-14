@@ -1,6 +1,7 @@
 use reqwest::header::HeaderMap;
 use reqwest::{self, Client};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::error::Error as StdError;
 use std::fmt::{self, Display};
 
@@ -89,15 +90,19 @@ impl From<reqwest::Error> for DexError {
 impl DexClient {
     pub async fn new(api_key: String, base_url: String) -> Result<Self, reqwest::Error> {
         let client = Client::builder()
-            .default_headers(Self::headers_with_api_key(api_key))
+            .default_headers(Self::headers_with_hashed_api_key(api_key))
             .build()?;
 
         Ok(DexClient { client, base_url })
     }
 
-    fn headers_with_api_key(api_key: String) -> HeaderMap {
+    fn headers_with_hashed_api_key(api_key: String) -> HeaderMap {
+        let mut hasher = Sha256::new();
+        hasher.update(api_key);
+        let hashed_api_key = format!("{:x}", hasher.finalize());
+
         let mut headers = HeaderMap::new();
-        headers.insert("Authorization", api_key.parse().unwrap());
+        headers.insert("Authorization", hashed_api_key.parse().unwrap());
         headers
     }
 
