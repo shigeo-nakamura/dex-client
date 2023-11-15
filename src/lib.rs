@@ -28,15 +28,18 @@ struct CreateOrderPayload {
 
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
-    pub price: String,
-    pub size: String,
+    #[serde(default)]
+    pub price: Option<String>,
+    #[serde(default)]
+    pub size: Option<String>,
     #[serde(default)]
     pub message: Option<String>,
 }
 
 #[derive(Serialize)]
 struct CloseAllPositionsPayload {
-    symbol: String,
+    #[serde(default)]
+    symbol: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -175,12 +178,7 @@ impl DexClient {
     ) -> Result<CloseAllPositionsResponse, DexError> {
         let url = format!("{}/close_all_positions?dex={}", self.base_url, dex);
         log::trace!("{:?}", url);
-        let payload = match symbol {
-            Some(symbol) => CloseAllPositionsPayload { symbol },
-            None => CloseAllPositionsPayload {
-                symbol: String::new(),
-            },
-        };
+        let payload = CloseAllPositionsPayload { symbol };
         self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
             .await
     }
