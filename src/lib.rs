@@ -15,6 +15,8 @@ pub struct TickerResponse {
 pub struct BalanceResponse {
     pub equity: String,
     pub balance: String,
+    #[serde(default)]
+    pub message: Option<String>,
 }
 
 #[derive(Serialize)]
