@@ -6,17 +6,20 @@ use std::error::Error as StdError;
 use std::fmt::{self, Display};
 
 #[derive(Deserialize, Debug)]
+pub struct CommonErrorResponse {
+    pub message: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct TickerResponse {
-    pub symbol: String,
-    pub price: String,
+    pub symbol: Option<String>,
+    pub price: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct BalanceResponse {
-    pub equity: String,
-    pub balance: String,
-    #[serde(default)]
-    pub message: Option<String>,
+    pub equity: Option<String>,
+    pub balance: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -24,23 +27,17 @@ struct CreateOrderPayload {
     symbol: String,
     size: String,
     side: String,
-    #[serde(default)]
     price: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
-    #[serde(default)]
     pub price: Option<String>,
-    #[serde(default)]
     pub size: Option<String>,
-    #[serde(default)]
-    pub message: Option<String>,
 }
 
 #[derive(Serialize)]
 struct CloseAllPositionsPayload {
-    #[serde(default)]
     symbol: Option<String>,
 }
 
@@ -117,8 +114,9 @@ impl DexClient {
         url: &str,
     ) -> Result<T, DexError> {
         let response = result.map_err(DexError::from)?;
+        let status = response.status();
 
-        if response.status().is_success() {
+        if status.is_success() {
             let headers = response.headers().clone();
             let body = response.text().await.map_err(DexError::from)?;
             log::debug!("Response body: {}", body);
@@ -129,10 +127,13 @@ impl DexClient {
                 DexError::Serde(e)
             })
         } else {
+            let error_response: CommonErrorResponse = response
+                .json()
+                .await
+                .unwrap_or(CommonErrorResponse { message: None });
             let error_message = format!(
-                "Server returned error: {}. Requested url: {}",
-                response.status(),
-                url
+                "Server returned error: {}. Requested url: {}, message: {:?}",
+                status, url, error_response.message,
             );
             log::error!("{}", &error_message);
             Err(DexError::ServerResponse(error_message))
