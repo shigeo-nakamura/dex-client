@@ -34,6 +34,7 @@ struct CreateOrderPayload {
 pub struct CreateOrderResponse {
     pub price: Option<String>,
     pub size: Option<String>,
+    pub fee: Option<String>,
 }
 
 #[derive(Serialize)]
