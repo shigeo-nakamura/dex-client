@@ -1,6 +1,6 @@
 [package]
 name = "dex-client"
-version = "1.0.0"
+version = "1.1.5"
 authors = ["Shigeo NAKAMURA <nakamura_shigeo@yahoo.com>"]
 edition = "2021"
 description = "Utility functions for dex trading"

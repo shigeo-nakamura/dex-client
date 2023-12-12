@@ -17,6 +17,19 @@ pub struct TickerResponse {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct FilledOrder {
+    pub order_id: Option<String>,
+    pub filled_size: Option<String>,
+    pub filled_value: Option<String>,
+    pub filled_fee: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct FilledOrdersResponse {
+    pub orders: Vec<FilledOrder>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct BalanceResponse {
     pub equity: Option<String>,
     pub balance: Option<String>,
@@ -32,9 +45,7 @@ struct CreateOrderPayload {
 
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
-    pub price: Option<String>,
-    pub size: Option<String>,
-    pub fee: Option<String>,
+    pub ordier_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -143,6 +154,20 @@ impl DexClient {
 
     pub async fn get_ticker(&self, dex: &str, symbol: &str) -> Result<TickerResponse, DexError> {
         let url = format!("{}/ticker?dex={}&symbol={}", self.base_url, dex, symbol);
+        log::trace!("{:?}", url);
+        self.handle_request(self.client.get(&url).send().await, &url)
+            .await
+    }
+
+    pub async fn get_filled_orders(
+        &self,
+        dex: &str,
+        symbol: &str,
+    ) -> Result<FilledOrdersResponse, DexError> {
+        let url = format!(
+            "{}/get-filled-orders?dex={}&symbol={}",
+            self.base_url, dex, symbol
+        );
         log::trace!("{:?}", url);
         self.handle_request(self.client.get(&url).send().await, &url)
             .await
