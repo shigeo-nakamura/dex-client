@@ -131,7 +131,7 @@ impl DexClient {
         if status.is_success() {
             let headers = response.headers().clone();
             let body = response.text().await.map_err(DexError::from)?;
-            log::debug!("Response body: {}", body);
+            log::trace!("Response body: {}", body);
 
             serde_json::from_str(&body).map_err(|e| {
                 log::warn!("Response header: {:?}", headers);
