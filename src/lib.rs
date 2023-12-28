@@ -45,7 +45,7 @@ struct CreateOrderPayload {
 
 #[derive(Deserialize, Debug)]
 pub struct CreateOrderResponse {
-    pub ordier_id: Option<String>,
+    pub order_id: Option<String>,
 }
 
 #[derive(Serialize)]
