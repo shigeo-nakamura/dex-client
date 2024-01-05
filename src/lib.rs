@@ -29,6 +29,12 @@ pub struct FilledOrdersResponse {
     pub orders: Vec<FilledOrder>,
 }
 
+#[derive(Serialize)]
+pub struct ClearFilledOrderPayload {
+    pub symbol: String,
+    pub order_id: String,
+}
+
 #[derive(Deserialize, Debug)]
 pub struct BalanceResponse {
     pub equity: Option<String>,
@@ -54,7 +60,7 @@ struct CloseAllPositionsPayload {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct CloseAllPositionsResponse {}
+pub struct DefaultResponse {}
 
 #[derive(Clone, Debug)]
 pub struct DexClient {
@@ -180,6 +186,22 @@ impl DexClient {
             .await
     }
 
+    pub async fn clear_filled_order(
+        &self,
+        dex: &str,
+        symbol: &str,
+        order_id: &str,
+    ) -> Result<DefaultResponse, DexError> {
+        let url = format!("{}/clear-filled-order?dex={}", self.base_url, dex);
+        log::trace!("{:?}", url);
+        let payload = ClearFilledOrderPayload {
+            symbol: symbol.to_string(),
+            order_id: order_id.to_string(),
+        };
+        self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
+            .await
+    }
+
     pub async fn create_order(
         &self,
         dex: &str,
@@ -204,7 +226,7 @@ impl DexClient {
         &self,
         dex: &str,
         symbol: Option<String>,
-    ) -> Result<CloseAllPositionsResponse, DexError> {
+    ) -> Result<DefaultResponse, DexError> {
         let url = format!("{}/close_all_positions?dex={}", self.base_url, dex);
         log::trace!("{:?}", url);
         let payload = CloseAllPositionsPayload { symbol };
