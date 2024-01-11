@@ -55,6 +55,11 @@ pub struct CreateOrderResponse {
 }
 
 #[derive(Serialize)]
+struct CancelOrderPayload {
+    pub order_id: String,
+}
+
+#[derive(Serialize)]
 struct CloseAllPositionsPayload {
     symbol: Option<String>,
 }
@@ -222,12 +227,26 @@ impl DexClient {
             .await
     }
 
+    pub async fn canel_order(
+        &self,
+        dex: &str,
+        order_id: &str,
+    ) -> Result<DefaultResponse, DexError> {
+        let url = format!("{}/cancel-order?dex={}", self.base_url, dex);
+        log::trace!("{:?}", url);
+        let payload = CancelOrderPayload {
+            order_id: order_id.to_string(),
+        };
+        self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
+            .await
+    }
+
     pub async fn close_all_positions(
         &self,
         dex: &str,
         symbol: Option<String>,
     ) -> Result<DefaultResponse, DexError> {
-        let url = format!("{}/close_all_positions?dex={}", self.base_url, dex);
+        let url = format!("{}/close-all-positions?dex={}", self.base_url, dex);
         log::trace!("{:?}", url);
         let payload = CloseAllPositionsPayload { symbol };
         self.handle_request(self.client.post(&url).json(&payload).send().await, &url)
