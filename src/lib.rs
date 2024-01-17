@@ -227,7 +227,7 @@ impl DexClient {
             .await
     }
 
-    pub async fn canel_order(
+    pub async fn cancel_order(
         &self,
         dex: &str,
         order_id: &str,
